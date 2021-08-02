@@ -10,6 +10,7 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200 items-center">
                     <h3>Thank you for booking with us.</h3>
+                    <div>Booked tickets @php echo implode(',',$seats) @endphp</div>
                     <a class="green" href="{{ route('ticket-book') }}" >Book Again</a>
                 </div>
                 <div class="ml-50">

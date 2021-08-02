@@ -32,7 +32,7 @@ class TrainController extends Controller
 
         // use laravel validation instead below code
         $max = $seatsAvailable < 7 ? $seatsAvailable : 7;
-        $rule = "required|integer|max:".$max;
+        $rule = "required|integer|min:1|max:".$max;
         $validated = $request->validate([
             'no_of_tickets' => $rule,
         ]);
@@ -103,7 +103,7 @@ class TrainController extends Controller
             $inserted = Ticket::insert($dataToBeInserted);
         }
         $allTickets = array_merge($allTickets,$seats);
-        return view('booked-tickets',compact('allTickets','rows','columns'));
+        return view('booked-tickets',compact('allTickets','rows','columns','seats'));
     }
 
     private function insertData($seats){
