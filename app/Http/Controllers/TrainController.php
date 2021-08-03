@@ -27,7 +27,8 @@ class TrainController extends Controller
         $allTickets = Ticket::where($condition)->get();
         $allTickets = array_column($allTickets->toArray(),'seat_number');
         sort($allTickets);
-
+        // print_r($allTickets);
+        // echo '<br>';
         $seatsAvailable = 80 - count($allTickets);
 
         // use laravel validation instead below code
@@ -47,51 +48,71 @@ class TrainController extends Controller
         $seatNumber = 1;
         $endOfLoop = false;
         for ($i=1; $i <= $rows; $i++) { 
-
             for ($j=1; $j <= $columns; $j++) {
-
                 // break the loop for extra seats that are not present
                 if($i == 12 && $j > 3){
                     $endOfLoop = true;
                     $outerBreak = true;
                     break;
                 }
-                
                 // check if seats are there in same row & 
                 // store in group so that we can use later if seats are not in same row
                 if(!in_array($seatNumber,$allTickets)){
                     $group[$i][$j] = $seatNumber;
                 }
-
-
-                // check if we find seats in row & break the loop and assign seats to users
-                if(isset($group[$i]) && count($group[$i]) == $bookTickets){
-                    $seats = $group[$i];
-                    $dataToBeInserted = $this->insertData($seats);
-                    Ticket::insert($dataToBeInserted);
-
-                    // we have find the seats in same rows so break the outer loop as well
-                    $outerBreak = true;
-                    break;
-                }
-
                 $seatNumber++;
-                
-            }
-            // break outer loop in case of seats available in same row 
-            if($outerBreak){
-                break;
             }
         }
 
-        // check if seats are not available in same row then book seats from different rows
-        if($endOfLoop){
-            $outerBreak = false;
+        $groupCount = [];
+        foreach ($group as $key => $value) {
+            $groupCount[$key] = count($value);
+        }
+        asort($groupCount);
+
+        // exact number of seats available in that row 
+        $ticketBooked = false;
+        foreach ($groupCount as $key => $value) {
+            if($bookTickets == $value){
+
+                $seats = $group[$key];
+                // book tickets
+                $dataToBeInserted = $this->insertData($seats);
+                $inserted = Ticket::insert($dataToBeInserted);
+                $ticketBooked = true;
+                break;
+            }else{
+                // less number of seats available in that row
+                if($bookTickets < $value){
+                    foreach ($group[$key] as $seat) {
+                        $seats[] = $seat;
+                        if(count($seats) == $bookTickets){
+                            $outerBreak = true;
+                            $ticketBooked = true;
+                            $dataToBeInserted = $this->insertData($seats);
+                            $inserted = Ticket::insert($dataToBeInserted);
+                            break;
+                        }
+                    }
+                    if($outerBreak){
+                        break;
+                    }
+                    
+                }
+
+            }
+        }
+
+
+        // seats available in different rows
+        if(!$ticketBooked){
             foreach ($group as $value) {
                 foreach ($value as $seat) {
                     $seats[] = $seat;
                     if(count($seats) == $bookTickets){
                         $outerBreak = true;
+                        $dataToBeInserted = $this->insertData($seats);
+                        $inserted = Ticket::insert($dataToBeInserted);
                         break;
                     }
                 }
@@ -99,9 +120,9 @@ class TrainController extends Controller
                     break;
                 }
             }
-            $dataToBeInserted = $this->insertData($seats);
-            $inserted = Ticket::insert($dataToBeInserted);
+            
         }
+
         $allTickets = array_merge($allTickets,$seats);
         return view('booked-tickets',compact('allTickets','rows','columns','seats'));
     }
